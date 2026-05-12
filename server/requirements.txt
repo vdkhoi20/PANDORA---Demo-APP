@@ -1,0 +1,20 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+pydantic>=2.6.0
+pillow>=10.0.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.40.0
+accelerate>=0.20.0
+
+# SAM 2
+git+https://github.com/facebookresearch/sam2.git
+
+# PANDORA's own deps (already installed if pandora-removal_demo is set up)
+diffusers>=0.21.0
+einops>=0.7.0
+scipy>=1.10.0
+tqdm>=4.65.0
