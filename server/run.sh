@@ -36,7 +36,27 @@ fi
 
 export PYTHONPATH="$PANDORA_DEMO_DIR:${PYTHONPATH:-}"
 
-PORT="${PORT:-8000}"
+# Pick a free port unless one is explicitly set (this box is shared, so the
+# default 8000 collides regularly).
+find_free_port() {
+  python3 - <<'PY' 2>/dev/null
+import socket
+s = socket.socket()
+s.bind(('', 0))
+print(s.getsockname()[1])
+s.close()
+PY
+}
+
+if [[ -z "${PORT:-}" ]]; then
+  PORT="$(find_free_port || true)"
+  if [[ -z "$PORT" ]]; then
+    PORT=8765
+  fi
+fi
+
+echo "[run.sh] PANDORA_DEMO_DIR=$PANDORA_DEMO_DIR"
+echo "[run.sh] starting uvicorn on port $PORT"
 
 uvicorn server.main:app --host 0.0.0.0 --port "$PORT" --workers 1 &
 UVICORN_PID=$!
