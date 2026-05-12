@@ -40,7 +40,15 @@ def _ensure_model():
                 "exception": str(e),
             },
         )
-    cfg = PandoraConfig()
+    cfg_kwargs = {}
+    # Override PandoraConfig.model_path with a local checkpoint or alternate HF id
+    # if PANDORA_MODEL_PATH is set. Useful when the default
+    # stabilityai/stable-diffusion-2-1 is gated/blocked on the GPU box.
+    model_path_override = os.environ.get("PANDORA_MODEL_PATH")
+    if model_path_override:
+        cfg_kwargs["model_path"] = model_path_override
+        print(f"[inpaint] PANDORA_MODEL_PATH override -> {model_path_override}")
+    cfg = PandoraConfig(**cfg_kwargs)
     m = PandoraRemoval(config=cfg)
     m.load_model()
     _model = m
