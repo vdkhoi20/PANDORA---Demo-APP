@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Upload } from 'lucide-react';
 import { useEditor } from '../state/useEditor';
 import { useMaskActions } from '../hooks/useMaskActions';
+import { useImageUpload } from '../hooks/useImageUpload';
 import { renderOverlay, strokeBrush, stampBrush } from '../lib/mask';
 import { loadImage } from '../lib/image';
 
@@ -13,7 +14,9 @@ interface Props {
 export function EditorCanvas({ containerRef }: Props) {
   const ed = useEditor();
   const actions = useMaskActions();
+  const { onInputChange, dragHandlers, isDragOver } = useImageUpload();
   const overlayRef = useRef<HTMLCanvasElement | null>(null);
+  const placeholderFileInputRef = useRef<HTMLInputElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -189,9 +192,27 @@ export function EditorCanvas({ containerRef }: Props) {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center text-slate-500 p-24">
-            <Upload size={48} className="mb-4 opacity-20" />
-            <p className="text-sm font-medium">No image selected</p>
+          <div
+            {...dragHandlers}
+            onClick={() => placeholderFileInputRef.current?.click()}
+            className={`flex flex-col items-center justify-center px-24 py-32 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+              isDragOver
+                ? 'border-violet-400 text-violet-200 bg-violet-500/10'
+                : 'border-white/10 text-slate-500 hover:bg-[#131b2e]'
+            }`}
+          >
+            <Upload size={48} className={`mb-4 transition-opacity ${isDragOver ? 'opacity-80' : 'opacity-30'}`} />
+            <p className="text-sm font-medium">
+              {isDragOver ? 'Drop to upload' : 'No image selected'}
+            </p>
+            <p className="text-xs mt-2 opacity-60">Click or drag &amp; drop an image</p>
+            <input
+              ref={placeholderFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onInputChange}
+            />
           </div>
         )}
       </div>

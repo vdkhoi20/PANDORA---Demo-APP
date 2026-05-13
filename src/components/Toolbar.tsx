@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEditor } from '../state/useEditor';
 import { useMaskActions } from '../hooks/useMaskActions';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 const SAMPLE_IMAGES = [
   'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2048',
@@ -30,28 +31,7 @@ export function Toolbar() {
   const actions = useMaskActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [promptText, setPromptText] = useState('');
-
-  const onFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const url = ev.target?.result as string;
-      ed.setImage(url);
-      ed.setOriginalImage(url);
-      ed.setResultImage(null);
-      ed.setShowResult(false);
-      ed.setIsComparing(false);
-      ed.setImageId(null);
-      ed.setMode('idle');
-      ed.pushHistory({
-        type: 'New image uploaded',
-        icon: <Upload size={14} />,
-        color: 'text-emerald-400',
-      });
-    };
-    reader.readAsDataURL(file);
-  };
+  const { onInputChange, dragHandlers, isDragOver } = useImageUpload();
 
   const pickSample = (src: string, idx: number) => {
     ed.setImage(src);
@@ -87,16 +67,28 @@ export function Toolbar() {
         <input
           type="file"
           ref={fileInputRef}
-          onChange={onFileUpload}
+          onChange={onInputChange}
           className="hidden"
           accept="image/*"
         />
         <div
+          {...dragHandlers}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-[#222a3d] transition-colors group"
+          className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group ${
+            isDragOver
+              ? 'border-violet-400 bg-violet-500/10'
+              : 'border-white/10 hover:bg-[#222a3d]'
+          }`}
         >
-          <Upload className="text-violet-400 mb-2 group-hover:scale-110 transition-transform" size={32} />
-          <span className="text-sm font-medium text-slate-200">Upload Image</span>
+          <Upload
+            className={`mb-2 group-hover:scale-110 transition-transform ${
+              isDragOver ? 'text-violet-300' : 'text-violet-400'
+            }`}
+            size={32}
+          />
+          <span className="text-sm font-medium text-slate-200">
+            {isDragOver ? 'Drop to upload' : 'Upload Image'}
+          </span>
           <span className="text-[10px] text-slate-500 mt-1">or drag and drop</span>
         </div>
       </div>
