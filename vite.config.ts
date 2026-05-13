@@ -12,5 +12,8 @@ export default defineConfig({
   },
   server: {
     hmr: process.env.DISABLE_HMR !== 'true',
+    // Accept any Host header so the dev server can be reached through tunnels
+    // (ngrok, cloudflared, etc.) when demoing from a different machine.
+    allowedHosts: true,
   },
 });
