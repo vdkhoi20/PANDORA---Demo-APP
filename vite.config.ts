@@ -12,8 +12,18 @@ export default defineConfig({
   },
   server: {
     hmr: process.env.DISABLE_HMR !== 'true',
-    // Accept any Host header so the dev server can be reached through tunnels
-    // (ngrok, cloudflared, etc.) when demoing from a different machine.
-    allowedHosts: true,
+    // Accept Host headers from common tunneling services so the dev server
+    // can be reached through ngrok / cloudflared / localtunnel when demoing
+    // from a different machine. Leading dots match any subdomain.
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '.ngrok-free.app',
+      '.ngrok-free.dev',
+      '.ngrok.app',
+      '.ngrok.io',
+      '.trycloudflare.com',
+      '.loca.lt',
+    ],
   },
 });
