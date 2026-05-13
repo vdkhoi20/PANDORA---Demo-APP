@@ -25,12 +25,41 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 
-# Allow override; default assumes pandora-removal_demo is a sibling of the server dir's parent.
-PANDORA_DEMO_DIR="${PANDORA_DEMO_DIR:-$REPO_ROOT/pandora-removal_demo}"
+# Source server/.env if present, so site-specific overrides (paths, ports,
+# tokens) can be kept out of git. See server/.env.example.
+if [[ -f "$HERE/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$HERE/.env"
+  set +a
+fi
 
-if [[ ! -d "$PANDORA_DEMO_DIR" ]]; then
-  echo "[run.sh] PANDORA_DEMO_DIR not found: $PANDORA_DEMO_DIR"
-  echo "[run.sh] Set PANDORA_DEMO_DIR=/path/to/pandora-removal_demo and re-run."
+# stabilityai/stable-diffusion-2-1 was deprecated; sd2-community/* is a
+# verbatim mirror. Default to it so /inpaint works without extra setup.
+export PANDORA_MODEL_PATH="${PANDORA_MODEL_PATH:-sd2-community/stable-diffusion-2-1}"
+
+# Resolve PANDORA_DEMO_DIR: honor the env var if set, otherwise search a few
+# common locations. First existing path wins.
+if [[ -z "${PANDORA_DEMO_DIR:-}" ]]; then
+  for candidate in \
+    "$REPO_ROOT/pandora-removal_demo" \
+    "$REPO_ROOT/../Object_Removal_benchmark_v21/pandora-removal_demo" \
+    "$HOME/Object_Removal_benchmark_v21/pandora-removal_demo" \
+    "/raid/$USER/nvloc/Object_Removal_benchmark_v21/pandora-removal_demo" \
+    "/raid/hvtham/nvloc/Object_Removal_benchmark_v21/pandora-removal_demo" \
+    "/raid/ltnghia01/vdkhoi/Object_Removal_benchmark_v21/pandora-removal_demo" \
+  ; do
+    if [[ -d "$candidate" ]]; then
+      PANDORA_DEMO_DIR="$candidate"
+      break
+    fi
+  done
+fi
+
+if [[ -z "${PANDORA_DEMO_DIR:-}" || ! -d "$PANDORA_DEMO_DIR" ]]; then
+  echo "[run.sh] PANDORA_DEMO_DIR not found (searched defaults and \$PANDORA_DEMO_DIR)."
+  echo "[run.sh] Set PANDORA_DEMO_DIR=/path/to/pandora-removal_demo and re-run,"
+  echo "[run.sh] or drop one into server/.env (see server/.env.example)."
   exit 1
 fi
 
@@ -56,6 +85,7 @@ if [[ -z "${PORT:-}" ]]; then
 fi
 
 echo "[run.sh] PANDORA_DEMO_DIR=$PANDORA_DEMO_DIR"
+echo "[run.sh] PANDORA_MODEL_PATH=$PANDORA_MODEL_PATH"
 echo "[run.sh] starting uvicorn on port $PORT"
 
 uvicorn server.main:app --host 0.0.0.0 --port "$PORT" --workers 1 &
