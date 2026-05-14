@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Start the Clutter Erase server and expose it via a free cloudflared quick tunnel.
+# Start the Clutter Erase FastAPI server on $PORT (auto-picked if unset).
+#
+# Exposure is the caller's responsibility. The typical flow is:
+#   - server/run-all.sh   -> named Cloudflare tunnel (pandora.nguyenvanloc.com)
+#   - manual cloudflared --url http://localhost:$PORT for a one-off quick tunnel
 #
 # Prereqs (one-time):
 #   pip install -r server/requirements.txt
@@ -96,21 +100,5 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-sleep 2
-
-if command -v cloudflared >/dev/null 2>&1; then
-  # Default to HTTP/2 transport. The default QUIC (UDP) transport is blocked
-  # by most university/lab firewalls. Override with CLOUDFLARED_PROTOCOL=quic
-  # if your network allows outbound UDP and you want the lower-latency path.
-  CLOUDFLARED_PROTOCOL="${CLOUDFLARED_PROTOCOL:-http2}"
-  CLOUDFLARED_EDGE_IP_VERSION="${CLOUDFLARED_EDGE_IP_VERSION:-4}"
-  echo "[run.sh] starting cloudflared quick tunnel -> http://localhost:$PORT (protocol=$CLOUDFLARED_PROTOCOL)"
-  cloudflared tunnel \
-    --url "http://localhost:$PORT" \
-    --protocol "$CLOUDFLARED_PROTOCOL" \
-    --edge-ip-version "$CLOUDFLARED_EDGE_IP_VERSION"
-else
-  echo "[run.sh] cloudflared not installed; server is up at http://localhost:$PORT"
-  echo "[run.sh] either install cloudflared, or use ngrok: ngrok http $PORT"
-  wait "$UVICORN_PID"
-fi
+echo "[run.sh] server up at http://localhost:$PORT"
+wait "$UVICORN_PID"

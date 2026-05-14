@@ -18,6 +18,7 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       '127.0.0.1',
+      '.nguyenvanloc.com',
       '.ngrok-free.app',
       '.ngrok-free.dev',
       '.ngrok.app',
