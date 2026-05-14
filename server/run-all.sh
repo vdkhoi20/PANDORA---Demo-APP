@@ -28,6 +28,14 @@ if [[ ! -f "$CF_CREDS" ]]; then
   exit 1
 fi
 
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+if (( NODE_MAJOR < 18 )); then
+  echo "[run-all] Node $(node -v 2>/dev/null || echo 'not found') is too old; Vite 6 needs >= 18."
+  echo "[run-all] Inside the conda env: conda install -c conda-forge 'nodejs>=20'"
+  echo "[run-all] Otherwise:           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && nvm install 20"
+  exit 1
+fi
+
 find_free_port() {
   python3 - <<'PY'
 import socket
