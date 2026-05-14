@@ -72,6 +72,11 @@ echo "[run-all] FE  :$FE_PORT  -> https://$FE_HOSTNAME"
 PORT="$BE_PORT" bash "$HERE/run.sh" &
 BE_PID=$!
 
+# Inject the public BE URL so the FE doesn't depend on a .env.local file
+# being copied onto the box. Vite picks up VITE_* env vars at startup.
+export VITE_API_BASE="https://$BE_HOSTNAME"
+echo "[run-all] VITE_API_BASE=$VITE_API_BASE"
+
 (cd "$REPO_ROOT" && "$VITE_BIN" --port="$FE_PORT" --strictPort --host=0.0.0.0) &
 FE_PID=$!
 
