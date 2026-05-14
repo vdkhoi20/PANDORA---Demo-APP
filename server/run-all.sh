@@ -41,6 +41,12 @@ PY
 BE_PORT="${BE_PORT:-$(find_free_port)}"
 FE_PORT="${FE_PORT:-$(find_free_port)}"
 
+VITE_BIN="$REPO_ROOT/node_modules/.bin/vite"
+if [[ ! -x "$VITE_BIN" ]]; then
+  echo "[run-all] node_modules missing -> running npm install (one-time)"
+  (cd "$REPO_ROOT" && npm install)
+fi
+
 cat > "$CF_CONFIG" <<EOF
 tunnel: $TUNNEL_UUID
 credentials-file: $CF_CREDS
@@ -58,7 +64,7 @@ echo "[run-all] FE  :$FE_PORT  -> https://$FE_HOSTNAME"
 PORT="$BE_PORT" bash "$HERE/run.sh" &
 BE_PID=$!
 
-(cd "$REPO_ROOT" && npm run dev -- --port="$FE_PORT" --strictPort) &
+(cd "$REPO_ROOT" && "$VITE_BIN" --port="$FE_PORT" --strictPort --host=0.0.0.0) &
 FE_PID=$!
 
 cleanup() {
