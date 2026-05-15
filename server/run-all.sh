@@ -28,6 +28,14 @@ if [[ ! -f "$CF_CREDS" ]]; then
   exit 1
 fi
 
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+if (( NODE_MAJOR < 18 )); then
+  echo "[run-all] Node $(node -v 2>/dev/null || echo 'not found') is too old; Vite 6 needs >= 18."
+  echo "[run-all] Inside the conda env: conda install -c conda-forge 'nodejs>=20'"
+  echo "[run-all] Otherwise:           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && nvm install 20"
+  exit 1
+fi
+
 find_free_port() {
   python3 - <<'PY'
 import socket
@@ -40,6 +48,12 @@ PY
 
 BE_PORT="${BE_PORT:-$(find_free_port)}"
 FE_PORT="${FE_PORT:-$(find_free_port)}"
+
+VITE_BIN="$REPO_ROOT/node_modules/.bin/vite"
+if [[ ! -x "$VITE_BIN" ]]; then
+  echo "[run-all] node_modules missing -> running npm install (one-time)"
+  (cd "$REPO_ROOT" && npm install)
+fi
 
 cat > "$CF_CONFIG" <<EOF
 tunnel: $TUNNEL_UUID
@@ -58,7 +72,12 @@ echo "[run-all] FE  :$FE_PORT  -> https://$FE_HOSTNAME"
 PORT="$BE_PORT" bash "$HERE/run.sh" &
 BE_PID=$!
 
-(cd "$REPO_ROOT" && npm run dev -- --port="$FE_PORT" --strictPort) &
+# Inject the public BE URL so the FE doesn't depend on a .env.local file
+# being copied onto the box. Vite picks up VITE_* env vars at startup.
+export VITE_API_BASE="https://$BE_HOSTNAME"
+echo "[run-all] VITE_API_BASE=$VITE_API_BASE"
+
+(cd "$REPO_ROOT" && "$VITE_BIN" --port="$FE_PORT" --strictPort --host=0.0.0.0) &
 FE_PID=$!
 
 cleanup() {
